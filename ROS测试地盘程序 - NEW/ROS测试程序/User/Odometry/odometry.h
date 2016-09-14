@@ -4,5 +4,8 @@
 #define ODOMETRY_LENGTH 12;
 
 void odometry(float,float);
+void quadrant_sign(float,float);
+float angle_equ(float,float);
+
 
 #endif

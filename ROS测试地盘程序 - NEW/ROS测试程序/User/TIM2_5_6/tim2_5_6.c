@@ -54,11 +54,11 @@ void TIM5_Configuration(void)
    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5 , ENABLE); 
 	
    /* 自动重装载寄存器周期的值(计数值) */
-   TIM_TimeBaseStructure.TIM_Period=4000;  //200hz
-	 // TIM_TimeBaseStructure.TIM_Period=1000;  //800hz
-	 // TIM_TimeBaseStructure.TIM_Period=2000;  //400hz
+   TIM_TimeBaseStructure.TIM_Period=4000;  //2000hz
+	 // TIM_TimeBaseStructure.TIM_Period=1000;  //8000hz
+	 // TIM_TimeBaseStructure.TIM_Period=2000;  //4000hz
 	
-	  // TIM_TimeBaseStructure.TIM_Period=8000;  //1000hz
+	 //TIM_TimeBaseStructure.TIM_Period=800;  //10000hz的采样频率
 	
    /* 累计 TIM_Period个频率后产生一个更新或者中断 */
    TIM_TimeBaseStructure.TIM_Prescaler= 8;
@@ -98,7 +98,7 @@ void TIM1_Configuration(void)
 	
 
    /* 自动重装载寄存器周期的值(计数值) */
-   TIM_TimeBaseStructure.TIM_Period=75;  //  75*100=7.5ms
+   TIM_TimeBaseStructure.TIM_Period=500;  //  75*100=7.5ms
    TIM_TimeBaseStructure.TIM_Prescaler=(7200-1); //周期7200/72=100us
 	
 	 /* 对外部时钟进行采样的时钟分频,这里没有用到 */

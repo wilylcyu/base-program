@@ -19,7 +19,7 @@
 #define COMMAND_WRONG 0x00;
 #define COMMAND_CORRECT 0X01;
 
-char odometry_data[13]={0};   //发送的里程计数据数组
+char odometry_data[21]={0};   //发送的里程计数据数组
 
 extern u8 USART_RX_BUF[USART_REC_LEN];     //接收缓冲,最大USART_REC_LEN个字节.
 extern u16 USART_RX_STA;       //接收状态标记	
@@ -36,11 +36,12 @@ union odometry
 {
 	float odoemtry_float;
 	unsigned char odometry_char[4];
-}x_data,y_data,theta_data;     //要发布的里程计数据
+}x_data,y_data,theta_data,vel_linear,vel_angular;     //要发布的里程计数据
 
-extern float position_x,position_y,oriention;         //计算得到的里程计数值
+extern float position_x,position_y,oriention,velocity_linear,velocity_angular;         //计算得到的里程计数值
 
 extern float Milemeter_L_Motor,Milemeter_R_Motor;     //左右轮的dt时间内的里程计数据
+float left_encoder_sum=0,right_encoder_sum=0;         //在两次发送里程计时间间隔内，码盘的采样数之和
 
 u8 reset_odom=0;   //复位里程计
 
@@ -56,7 +57,7 @@ void TIM1_Configuration(void);
 int main(void)
 {		
 	u8 t=0;
-	u8 i=0,j=0,k=0,m=0;
+	u8 i=0,j=0,m=0;//,k=0,m=0;
 	
 	TIM2_PWM_Init();	        //控制电机
 	ENC_Init2();              //设置电机A TIM3编码器模式PB6 PB7
@@ -80,43 +81,51 @@ int main(void)
 		//Set_CarStraight(1200,628);		
 		if(main_sta&0x01)   //发送里程计数据
 		{
-			
+			//odometry(left_encoder_sum,right_encoder_sum);
 			x_data.odoemtry_float=position_x;
 			y_data.odoemtry_float=position_y;
 			theta_data.odoemtry_float=oriention;
+			vel_linear.odoemtry_float=velocity_linear;
+			vel_angular.odoemtry_float=velocity_angular;
 			for(j=0;j<4;j++)
 			{
 				odometry_data[j]=x_data.odometry_char[j];
 				odometry_data[j+4]=y_data.odometry_char[j];
 				odometry_data[j+8]=theta_data.odometry_char[j];
+				odometry_data[j+12]=vel_linear.odometry_char[j];
+				odometry_data[j+16]=vel_angular.odometry_char[j];
 			}
-			odometry_data[12]='\n';
+			odometry_data[20]='\n';
 			
-			for(i=0;i<13;i++)
+			for(i=0;i<21;i++)
 			{
 				USART_ClearFlag(USART1,USART_FLAG_TC);  //在发送第一个数据前加此句，解决第一个数据不能正常发送的问题				
 				USART_SendData(USART1,odometry_data[i]);	
 				while(USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);				
 			}
 			main_sta&=0xFE;
+			//left_encoder_sum=0;
+			//right_encoder_sum=0;
 		}
 		if(main_sta&0x02)      //调用计算里程计数据函数
 		{
-			odometry(Milemeter_L_Motor,Milemeter_R_Motor);
+			odometry(Milemeter_R_Motor,Milemeter_L_Motor);
+			//left_encoder_sum+=Milemeter_L_Motor;
+			//right_encoder_sum+=Milemeter_R_Motor;
 			main_sta&=0xFD;
 		} 
-		if(main_sta&0x04)     //当发送指令正确接收
-		{
-				USART_ClearFlag(USART1,USART_FLAG_TC);  //在发送第一个数据前加此句，解决第一个数据不能正常发送的问题
-				for(k=0;k<3;k++)
-				{
-					USART_SendData(USART1,0x01);	
-					while(USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);
-				}					
-				USART_SendData(USART1,'\n');	
-				while(USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);		
-				main_sta&=0xFB;
-		}
+//		if(main_sta&0x04)     //当发送指令正确接收
+//		{
+//				USART_ClearFlag(USART1,USART_FLAG_TC);  //在发送第一个数据前加此句，解决第一个数据不能正常发送的问题
+//				for(k=0;k<3;k++)
+//				{
+//					USART_SendData(USART1,0x01);	
+//					while(USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);
+//				}					
+//				USART_SendData(USART1,'\n');	
+//				while(USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);		
+//				main_sta&=0xFB;
+//		}
 		if(main_sta&0x08)      //当发送指令没有正确接收时
 		{
 			  USART_ClearFlag(USART1,USART_FLAG_TC);  //在发送第一个数据前加此句，解决第一个数据不能正常发送的问题
